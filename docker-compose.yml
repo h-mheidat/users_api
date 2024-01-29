@@ -1,0 +1,47 @@
+version: "2.4"
+
+services:
+  users-service-base:
+    container_name: user-base
+    image: users-api-base
+    build:
+      context: .
+    ports:
+      - "8000:80"
+    volumes:
+      - ${PWD}:/app
+    environment:
+      - VIRTUAL_HOST=users.docker
+      - POSTGRES_HOST=users-postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    command: ["echo", "Hello. Is it me you're looking for?"]
+
+  users-service-api:
+    extends: users-service-base
+    container_name: users-service
+    depends_on:
+      - users-postgres
+    command: bin/boot.sh
+
+  users-postgres:
+    container_name: users-postgres
+    image: postgres:12.5
+    environment:
+      VIRTUAL_HOST: users-postgres.docker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    ports:
+      - "9876:5432"
+
+  unit-test:
+    extends: users-service-base
+    command: bin/test.sh
+
+networks:
+  default:
+    external:
+      name: vpc
